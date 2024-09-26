@@ -20,7 +20,7 @@ import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/api/tictactoe")
-@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*", allowCredentials = "true")
+// @CrossOrigin(origins = "*", allowedHeaders = "*", allowCredentials = "true")
 public class TicTacToeController {
 
     @Value("${google.oauth2.token-info-url}")
@@ -28,6 +28,7 @@ public class TicTacToeController {
     private TicTacToeAI ai = new TicTacToeAI();
 
     @PostMapping("/move")
+    // @CrossOrigin(origins = "*", allowedHeaders = "*", allowCredentials = "true")
     public ResponseEntity<?> makeMove(@RequestHeader("Authorization") String token, @RequestBody GameState gameState, @RequestParam boolean isPlayerMove) {
 
         if (!validateToken(token)) {
