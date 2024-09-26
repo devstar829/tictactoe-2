@@ -30,7 +30,7 @@ import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/tictactoe")
-@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*", allowCredentials = "true")
+// @CrossOrigin(origins = "*", allowedHeaders = "*", allowCredentials = "true")
 public class TicTacToeController {
 
     private String tokenInfoUrl = "https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="; // Set this in your application properties
@@ -38,7 +38,9 @@ public class TicTacToeController {
     private TicTacToeAI ai = new TicTacToeAI();
 
     @PostMapping("/move")
-    public ResponseEntity<?> makeMove(@RequestHeader("Authorization") String token, @RequestBody GameState gameState, @RequestParam boolean isPlayerMove) throws GeneralSecurityException, IOException, IllegalAccessException {
+    // @CrossOrigin(origins = "*", allowedHeaders = "*", allowCredentials = "true")
+    public ResponseEntity<?> makeMove(@RequestHeader("Authorization") String token, @RequestBody GameState gameState, @RequestParam boolean isPlayerMove) {
+
 
         if (!validateToken(getTokenFromRequest(token))) {
             return new ResponseEntity<>("Invalid token", HttpStatus.UNAUTHORIZED);
