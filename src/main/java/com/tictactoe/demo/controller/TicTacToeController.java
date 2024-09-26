@@ -4,6 +4,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+
 import com.google.api.client.util.Value;
 import com.tictactoe.demo.model.GameState;
 import com.tictactoe.demo.model.TicTacToeAI;
@@ -20,13 +21,14 @@ import java.util.Collections;
 import java.security.GeneralSecurityException;
 import java.io.IOException;
 
+
 @RestController
 @RequestMapping("/api/tictactoe")
 // @CrossOrigin(origins = "*", allowedHeaders = "*", allowCredentials = "true")
 public class TicTacToeController {
 
-    @Value("${google.oauth2.token-info-url}")
-    private String tokenInfoUrl; // Set this in your application properties
+    private String tokenInfoUrl = "https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="; // Set this in your application properties
+
     private TicTacToeAI ai = new TicTacToeAI();
 
     @PostMapping("/move")
@@ -101,6 +103,7 @@ public class TicTacToeController {
                 .setAudience(Collections
                         .singletonList("118071667465-aa58e14p3cjeqhncamleb7bvcb3gdcm0.apps.googleusercontent.com"))
                 .build();
+
 
         GoogleIdToken idToken = verifier.verify(token);
         return idToken != null;
