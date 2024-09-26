@@ -3,6 +3,7 @@ package com.tictactoe.demo.model;
 public class GameState {
     private char[][] board;
     private char currentPlayer;
+    private char winner;
 
     public GameState() {
         this.board = new char[3][3];
@@ -29,5 +30,13 @@ public class GameState {
 
     public void setCurrentPlayer(char currentPlayer) {
         this.currentPlayer = currentPlayer;
+    }
+
+    public char getWinner(){
+        return this.winner;
+    }
+    
+    public void setWinner(char x){
+        this.winner = x;
     }
 }

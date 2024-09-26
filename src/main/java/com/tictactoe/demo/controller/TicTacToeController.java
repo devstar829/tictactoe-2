@@ -1,20 +1,15 @@
 package com.tictactoe.demo.controller;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders; // From Spring
+
 import com.google.api.client.util.Value;
 import com.tictactoe.demo.model.GameState;
 import com.tictactoe.demo.model.TicTacToeAI;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -22,10 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.Collections;
+import java.security.GeneralSecurityException;
+import java.io.IOException;
 
 
 @RestController
@@ -38,52 +32,78 @@ public class TicTacToeController {
     private TicTacToeAI ai = new TicTacToeAI();
 
     @PostMapping("/move")
-    // @CrossOrigin(origins = "*", allowedHeaders = "*", allowCredentials = "true")
-    public ResponseEntity<?> makeMove(@RequestHeader("Authorization") String token, @RequestBody GameState gameState, @RequestParam boolean isPlayerMove) {
-
+    public ResponseEntity<?> makeMove(@RequestHeader("Authorization") String token, @RequestBody GameState gameState,
+            @RequestParam boolean isPlayerMove) throws GeneralSecurityException, IOException, IllegalAccessException {
 
         if (!validateToken(getTokenFromRequest(token))) {
             return new ResponseEntity<>("Invalid token", HttpStatus.UNAUTHORIZED);
         }
 
+
         if (isPlayerMove) {
+            if(fullBoard(gameState.getBoard())){
+                gameState.setWinner('N');
+                return ResponseEntity.ok(gameState);
+            }
             gameState.setCurrentPlayer('O');
             int[] aiMove = ai.findBestMove(gameState.getBoard());
             gameState.getBoard()[aiMove[0]][aiMove[1]] = 'O';
+            char winner = checkWinner(gameState.getBoard());
+            gameState.setWinner(winner);
             gameState.setCurrentPlayer('X');
+            return ResponseEntity.ok(gameState);
+
         }
 
         return ResponseEntity.ok(gameState);
     }
 
-     /**
+    private boolean fullBoard(char[][] board){
+        for (char[] row : board) {
+            for (char cell : row) {
+                if (cell == '-') {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private char checkWinner(char[][] board){
+        for (int i = 0; i < 3; i++) {
+            if (board[i][0] == board[i][1] && board[i][1] == board[i][2] && board[i][0] != '-') {
+                return board[i][0];
+            }
+        }
+        for (int i = 0; i < 3; i++) {
+            if (board[0][i] == board[1][i] && board[1][i] == board[2][i] && board[0][i] != '-') {
+                return board[0][i];
+            }
+        }
+        if (board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0] != '-') {
+            return board[0][0];
+        }
+        if (board[0][2] == board[1][1] && board[1][1] == board[2][0] && board[0][2] != '-') {
+            return board[0][2];
+        }
+        return '-';
+    }
+
+    /**
      * @param token
      * @return
      */
     private boolean validateToken(String token) throws GeneralSecurityException, IOException, IllegalAccessException {
-//        RestTemplate restTemplate = new RestTemplate();
-//
-//        // Prepare the request to Google's token info endpoint
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.set("Authorization", token);
-//        HttpEntity<String> request = new HttpEntity<>(headers);
-//
-//        try {
-//            // Call Google's token info endpoint
-//            ResponseEntity<String> response = restTemplate.exchange(
-//                tokenInfoUrl + token, HttpMethod.GET, request, String.class
-//            );
-//
-//            // Check if response status is OK
-//            return response.getStatusCode() == HttpStatus.OK;
-//        } catch (Exception e) {
-//            return false; // Token validation failed
-//        }
-        NetHttpTransport transport  = new NetHttpTransport();
+        RestTemplate restTemplate = new RestTemplate();
+
+        // Prepare the request to Google's token info endpoint
+        NetHttpTransport transport = new NetHttpTransport();
         GsonFactory gsonFactory = new GsonFactory();
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, gsonFactory)
-                .setAudience(Collections.singletonList("118071667465-aa58e14p3cjeqhncamleb7bvcb3gdcm0.apps.googleusercontent.com"))
+                .setAudience(Collections
+                        .singletonList("118071667465-aa58e14p3cjeqhncamleb7bvcb3gdcm0.apps.googleusercontent.com"))
                 .build();
+
 
         GoogleIdToken idToken = verifier.verify(token);
         return idToken != null;
