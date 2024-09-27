@@ -5,9 +5,11 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 
-import com.google.api.client.util.Value;
 import com.tictactoe.demo.model.GameState;
 import com.tictactoe.demo.model.TicTacToeAI;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,32 +18,33 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 import java.util.Collections;
 import java.security.GeneralSecurityException;
 import java.io.IOException;
 
-
 @RestController
 @RequestMapping("/api/tictactoe")
-// @CrossOrigin(origins = "*", allowedHeaders = "*", allowCredentials = "true")
 public class TicTacToeController {
 
-    private String tokenInfoUrl = "https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="; // Set this in your application properties
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
 
     private TicTacToeAI ai = new TicTacToeAI();
 
     @PostMapping("/move")
-    public ResponseEntity<?> makeMove(@RequestHeader("Authorization") String token, @RequestBody GameState gameState,
+    public ResponseEntity<?> makeMove(@RequestHeader("Authorization") String token, @RequestHeader("userId") String userId, @RequestBody GameState gameState,
             @RequestParam boolean isPlayerMove) throws GeneralSecurityException, IOException, IllegalAccessException {
 
-        if (!validateToken(getTokenFromRequest(token))) {
+        // if (!validateToken(getTokenFromRequest(token))) {
+        //     return new ResponseEntity<>("Invalid token", HttpStatus.UNAUTHORIZED);
+        // }
+        
+        if (!validateTokenAsRedis(userId)) {
             return new ResponseEntity<>("Invalid token", HttpStatus.UNAUTHORIZED);
         }
 
-
         if (isPlayerMove) {
-            if(fullBoard(gameState.getBoard())){
+            if (fullBoard(gameState.getBoard())) {
                 gameState.setWinner('N');
                 return ResponseEntity.ok(gameState);
             }
@@ -58,7 +61,7 @@ public class TicTacToeController {
         return ResponseEntity.ok(gameState);
     }
 
-    private boolean fullBoard(char[][] board){
+    private boolean fullBoard(char[][] board) {
         for (char[] row : board) {
             for (char cell : row) {
                 if (cell == '-') {
@@ -69,7 +72,7 @@ public class TicTacToeController {
         return true;
     }
 
-    private char checkWinner(char[][] board){
+    private char checkWinner(char[][] board) {
         for (int i = 0; i < 3; i++) {
             if (board[i][0] == board[i][1] && board[i][1] == board[i][2] && board[i][0] != '-') {
                 return board[i][0];
@@ -90,12 +93,12 @@ public class TicTacToeController {
     }
 
     /**
+     * Used for vailateToken using the Google Auth
+     * 
      * @param token
      * @return
      */
     private boolean validateToken(String token) throws GeneralSecurityException, IOException, IllegalAccessException {
-        RestTemplate restTemplate = new RestTemplate();
-
         // Prepare the request to Google's token info endpoint
         NetHttpTransport transport = new NetHttpTransport();
         GsonFactory gsonFactory = new GsonFactory();
@@ -104,11 +107,11 @@ public class TicTacToeController {
                         .singletonList("118071667465-aa58e14p3cjeqhncamleb7bvcb3gdcm0.apps.googleusercontent.com"))
                 .build();
 
-
         GoogleIdToken idToken = verifier.verify(token);
         return idToken != null;
     }
 
+   
     public String getTokenFromRequest(String token) throws IllegalAccessException {
         String[] parts = token.split(" ");
         if (parts.length != 2 || !parts[0].contains("Bearer")) {
@@ -116,4 +119,12 @@ public class TicTacToeController {
         }
         return parts[1];
     }
+
+
+    private boolean validateTokenAsRedis(String userId){
+        String token = redisTemplate.opsForValue().get("userToken:" + userId);
+        return token != null;
+    }
+
+
 }
